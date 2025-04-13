@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test-sida </title>
+</head>
+<body>
+    <div>
+        <br>
+        <label for="latitude"> depart latitude</label>
+        <input type="text" id="latitude">
+        <br>
+        <label for="longitude">départ longitude</label>
+        <input type="text" name="" id="longitude">
+        <br>
+        <br>
+        <label for="destination_latitude">destination_latitude</label>
+        <input type="text"id="destination_latitude">
+        <br>
+        <label for="destination_longitude">destination_longitude</label>
+        <input type="text" name="" id="destination_longitude">
+        <br>
+        <button onclick="sendMessage()">Envoyer JSON</button>
+    </div>
+    <div id="output"></div>
+
+    <script>
+        const websocket = new WebSocket("ws://127.0.0.1:8000/ws");
+        const outputDiv = document.getElementById("output");
+        var latitude_value=document.getElementById("latitude");
+        var longitude_value=document.getElementById("longitude");
+        var destination_latitude=document.getElementById('destination_latitude');
+        var destination_longitude=document.getElementById('destination_longitude');
+        websocket.onopen = () => {
+            console.log("Connexion WebSocket établie pour JSON !");
+            outputDiv.innerHTML += "<p>Connexion établie avec le serveur JSON.</p>";
+        };
+        
+        websocket.onmessage = (event) => {
+            console.log("Message reçu du serveur:", event.data);
+            try {
+                const messageData = JSON.parse(event.data);
+                const senderUid = messageData.sender_uid;
+                const payload = messageData.payload;
+                outputDiv.innerHTML += `<p> ${senderUid} a envoyé: ${payload}</p>`;
+            } catch (error) {
+                console.error("Erreur lors du parsing JSON:", error);
+                outputDiv.innerHTML += `<p>Serveur (non JSON): ${event.data}</p>`;
+            }
+        };
+
+        websocket.onclose = () => {
+            console.log("Connexion WebSocket JSON fermée.");
+            outputDiv.innerHTML += "<p>Connexion avec le serveur JSON fermée.</p>";
+        };
+
+        websocket.onerror = (error) => {
+            console.error("Erreur WebSocket:", error);
+            outputDiv.innerHTML += `<p>Erreur WebSocket: ${error}</p>`;
+        };
+
+        function sendMessage() {
+            if (websocket.readyState === WebSocket.OPEN) {
+                const messageToSend='{"latitude" : '+latitude_value.value+', "longitude" : '+longitude_value.value+'}';
+                const destination='{"latitude" : '+destination_latitude.value+', "longitude" : '+destination_longitude.value+'}';
+                try {
+                    JSON.parse(messageToSend);
+                    JSON.parse(destination);
+                    var liste=[messageToSend,destination];
+					if (messageToSend!=null || destination!=null){
+						websocket.send(liste);
+					}
+                } catch (error) {
+                    outputDiv.innerHTML += "<p>Veuillez entrer une chaîne JSON valide (ex: {\"message\": \"Bonjour\"}).</p>";
+                    console.error("Erreur lors du parsing de votre JSON:", error);
+                }
+            } else {
+                outputDiv.innerHTML += "<p>La connexion WebSocket n'est pas ouverte.</p>";
+            }
+        }
+    </script>
+</body>
+</html>
